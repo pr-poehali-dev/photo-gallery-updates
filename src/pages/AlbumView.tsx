@@ -7,11 +7,15 @@ import Icon from "@/components/ui/icon";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Album, Photo } from "@/lib/types";
 
+
 const AlbumView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [albums, setAlbums] = useLocalStorage<Album[]>("albums", []);
   const album = albums.find(a => a.id === id);
+  const [gridCols, setGridCols] = useState(4);
+  const [gridGap, setGridGap] = useState(4);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!album) {
     return (
@@ -22,35 +26,44 @@ const AlbumView = () => {
     );
   }
 
-  const addPhoto = () => {
-    // В реальном приложении здесь был бы загрузчик изображений
-    // Для демонстрации используем случайное изображение с Unsplash
-    const randomId = Math.floor(Math.random() * 1000);
-    const newPhoto: Photo = {
-      id: nanoid(),
-      url: `https://source.unsplash.com/random/800x600?sig=${randomId}`,
-      title: `Фото ${album.photos.length + 1}`
-    };
-
-    const updatedAlbum = {
-      ...album,
-      photos: [...album.photos, newPhoto]
-    };
-
-    setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const newPhotos: Photo[] = [];
+    
+    Array.from(files).forEach(file => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      
+      img.onload = () => {
+        const aspectRatio = img.width > img.height ? "landscape" : "portrait";
+        
+        const newPhoto: Photo = {
+          id: nanoid(),
+          url,
+          title: file.name,
+          originalName: file.name,
+          aspectRatio
+        };
+        
+        const updatedAlbum = {
+          ...album,
+          photos: [...album.photos, newPhoto]
+        };
+        
+        setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
+      };
+      
+      img.src = url;
+    });
+    
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  const deletePhoto = (photoId: string) => {
-    const updatedAlbum = {
-      ...album,
-      photos: album.photos.filter(photo => photo.id !== photoId)
-    };
-
-    setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
-  };
-
-  return (
-    <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-3">
           <Button variant="ghost" onClick={() => navigate('/')}>
