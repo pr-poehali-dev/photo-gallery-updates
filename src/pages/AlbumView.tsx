@@ -25,11 +25,16 @@ const AlbumView = () => {
     );
   }
 
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
-    Array.from(files).forEach(file => {
+    // Создадим копию альбома, чтобы не модифицировать состояние напрямую
+    let updatedAlbum = { ...album };
+    let newPhotos = [...updatedAlbum.photos];
+    
+    const processFile = (file: File, index: number) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
       
@@ -44,15 +49,22 @@ const AlbumView = () => {
           aspectRatio
         };
         
-        const updatedAlbum = {
-          ...album,
-          photos: [...album.photos, newPhoto]
-        };
+        // Добавляем фото в массив
+        newPhotos.push(newPhoto);
         
-        setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
+        // Если это последний файл, обновляем состояние
+        if (index === files.length - 1) {
+          updatedAlbum.photos = newPhotos;
+          setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
+        }
       };
       
       img.src = url;
+    };
+    
+    // Обрабатываем каждый файл
+    Array.from(files).forEach((file, index) => {
+      processFile(file, index);
     });
     
     // Reset the file input
@@ -60,6 +72,7 @@ const AlbumView = () => {
       fileInputRef.current.value = '';
     }
   };
+
 
   const addPhoto = () => {
     if (fileInputRef.current) {
