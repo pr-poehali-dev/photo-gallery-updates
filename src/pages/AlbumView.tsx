@@ -29,20 +29,13 @@ const AlbumView = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
-    // Создаем временный массив для новых фотографий
-    const uploadedPhotos: Photo[] = [];
-    let filesProcessed = 0;
-    
-    // Обрабатываем каждый файл
     Array.from(files).forEach(file => {
       const url = URL.createObjectURL(file);
       const img = new Image();
       
       img.onload = () => {
-        // Определяем ориентацию изображения
         const aspectRatio = img.width / img.height > 1 ? "landscape" : "portrait";
         
-        // Создаем объект фотографии
         const newPhoto: Photo = {
           id: nanoid(),
           url,
@@ -51,30 +44,18 @@ const AlbumView = () => {
           aspectRatio
         };
         
-        // Добавляем в массив новых фотографий
-        uploadedPhotos.push(newPhoto);
-        filesProcessed++;
+        const updatedAlbum = {
+          ...album,
+          photos: [...album.photos, newPhoto]
+        };
         
-        // Когда все файлы обработаны, обновляем состояние
-        if (filesProcessed === files.length) {
-          // Обновляем альбом с новыми фотографиями
-          const updatedAlbum = {
-            ...album,
-            photos: [...album.photos, ...uploadedPhotos]
-          };
-          
-          // Обновляем состояние альбомов
-          setAlbums(prevAlbums => 
-            prevAlbums.map(a => a.id === id ? updatedAlbum : a)
-          );
-        }
+        setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
       };
       
-      // Загружаем изображение для определения размеров
       img.src = url;
     });
     
-    // Сбрасываем значение поля ввода файлов
+    // Reset the file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -123,11 +104,7 @@ const AlbumView = () => {
               <Icon name="Plus" className="mr-1" />
               Добавить фото
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={deleteAllPhotos}
-              disabled={album.photos.length === 0}
-            >
+            <Button variant="destructive" onClick={deleteAllPhotos}>
               <Icon name="Trash2" className="mr-1" />
               Удалить все
             </Button>
@@ -189,7 +166,7 @@ const AlbumView = () => {
                 }`}
               />
               <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 p-1 text-white text-xs truncate">
-                {photo.originalName || photo.title}
+                {photo.originalName}
               </div>
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <Button 
