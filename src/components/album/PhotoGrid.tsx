@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import { Photo, GridViewMode } from "@/lib/types";
@@ -81,31 +81,69 @@ const PhotoGrid = ({
     setCurrentPhotoIndex(index);
   };
 
-  // Единый компонент фотографии для всех режимов
-  const PhotoItem = ({ photo, index }: { photo: Photo, index: number }) => {
-    // Определяем классы для разных режимов
-    let aspectClass = "";
-    
-    if (viewMode === "uniform") {
-      // В режиме uniform все фото одинакового размера
-      aspectClass = "aspect-square";
-    } else if (viewMode === "standard") {
-      // В стандартном режиме учитываем соотношение сторон
-      if (photo.aspectRatio === "landscape") {
-        // Ландшафтные фото на два столбца
-        aspectClass = `aspect-[3/2] ${index % gridCols < gridCols - 1 ? 'col-span-2' : ''}`;
+  // Подготовка данных для умной сетки
+  const prepareGridItems = useMemo(() => {
+    if (viewMode !== "standard") return null;
+
+    // Создаем новый массив с расчетами для grid layout
+    let row = 0;
+    let colsInCurrentRow = 0;
+    const gridItems = [];
+
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      const isLandscape = photo.aspectRatio === "landscape";
+      
+      // Если это горизонтальное фото
+      if (isLandscape) {
+        // Если уже есть фото в строке и добавление горизонтального превысит количество столбцов,
+        // переходим на новую строку
+        if (colsInCurrentRow > 0 && colsInCurrentRow + 2 > gridCols) {
+          row++;
+          colsInCurrentRow = 0;
+        }
+        
+        // Добавляем горизонтальное фото (занимает 2 колонки)
+        gridItems.push({
+          photo,
+          row,
+          col: colsInCurrentRow,
+          colSpan: 2,
+          index: i
+        });
+        
+        colsInCurrentRow += 2;
       } else {
-        aspectClass = "aspect-[2/3]";
+        // Для вертикального фото (занимает 1 колонку)
+        gridItems.push({
+          photo,
+          row,
+          col: colsInCurrentRow,
+          colSpan: 1,
+          index: i
+        });
+        
+        colsInCurrentRow += 1;
+      }
+      
+      // Если текущая строка заполнена, переходим на следующую
+      if (colsInCurrentRow >= gridCols) {
+        row++;
+        colsInCurrentRow = 0;
       }
     }
     
+    return gridItems;
+  }, [photos, gridCols, viewMode]);
+  
+  // Единый компонент фотографии для всех режимов
+  const PhotoItem = ({ photo, index }: { photo: Photo, index: number }) => {
     return (
       <div 
         key={photo.id} 
         className={`relative group 
           ${draggedPhotoId === photo.id ? 'opacity-60' : ''} 
           ${draggedPhotoId && draggedPhotoId !== photo.id ? 'cursor-move' : 'cursor-pointer'}
-          ${viewMode === "standard" && photo.aspectRatio === "landscape" && index % gridCols < gridCols - 1 ? 'col-span-2' : ''}
         `}
         draggable="true"
         onDragStart={(e) => handleDragStart(e, photo.id)}
@@ -117,10 +155,9 @@ const PhotoGrid = ({
         <img 
           src={photo.url} 
           alt={photo.title} 
-          className={`w-full h-full object-cover rounded-md ${
-            viewMode === "uniform" ? "aspect-square" : 
-            viewMode === "masonry" ? "" :
-            photo.aspectRatio === "landscape" ? "aspect-[3/2]" : "aspect-[2/3]"
+          className={`w-full rounded-md ${
+            viewMode === "uniform" ? "aspect-square object-cover" : 
+            "object-contain h-auto"
           }`}
         />
         <div className="absolute bottom-0 left-0 right-0 bg-white p-1 text-black text-xs truncate border-t">
@@ -171,12 +208,48 @@ const PhotoGrid = ({
     );
   }
 
+  // Умная сетка для режима standard
+  if (viewMode === "standard" && prepareGridItems) {
+    return (
+      <>
+        <div 
+          className="grid"
+          style={{ 
+            gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+            gap: `${gridGap * 0.25}rem`
+          }}
+        >
+          {prepareGridItems.map((item) => (
+            <div 
+              key={item.photo.id} 
+              style={{ 
+                gridColumn: `span ${item.colSpan}`,
+                gridRow: `auto`
+              }}
+            >
+              <PhotoItem photo={item.photo} index={item.index} />
+            </div>
+          ))}
+        </div>
+        
+        <PhotoModal
+          photos={photos}
+          currentIndex={currentPhotoIndex}
+          isOpen={modalOpen}
+          onClose={closePhotoModal}
+          onNavigate={navigatePhoto}
+        />
+      </>
+    );
+  }
+
+  // Uniform grid layout
   return (
     <>
       <div 
         className="grid gap-2"
         style={{ 
-          gridTemplateColumns: `repeat(${viewMode === "standard" ? gridCols * 2 : gridCols}, 1fr)`,
+          gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
           gap: `${gridGap * 0.25}rem`
         }}
       >

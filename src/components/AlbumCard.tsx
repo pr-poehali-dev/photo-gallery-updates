@@ -48,11 +48,13 @@ const AlbumCard = ({ album, onDelete, onEdit, onClick }: AlbumCardProps) => {
       <CardContent className="p-4 flex flex-col h-full">
         <div className="relative flex-grow w-full flex items-center justify-center overflow-hidden bg-gray-100 rounded-md mb-2">
           {album.photos.length > 0 ? (
-            <img 
-              src={album.photos[0].url} 
-              alt={album.title} 
-              className="w-full h-full object-cover"
-            />
+            <div className="w-full h-full flex items-center justify-center">
+              <img 
+                src={album.photos[0].url} 
+                alt={album.title} 
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
           ) : (
             <Icon name="Camera" size={48} className="text-gray-400" />
           )}
