@@ -13,8 +13,8 @@ const AlbumView = () => {
   const navigate = useNavigate();
   const [albums, setAlbums] = useLocalStorage<Album[]>("albums", []);
   const album = albums.find(a => a.id === id);
-  const [gridCols, setGridCols] = useState(4);
-  const [gridGap, setGridGap] = useState(4);
+  const [gridCols, setGridCols] = useLocalStorage<number>("photosGridCols", 4);
+  const [gridGap, setGridGap] = useLocalStorage<number>("photosGridGap", 4);
   const [isUploading, setIsUploading] = useState(false);
   const [draggedPhotoId, setDraggedPhotoId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,18 +246,18 @@ const AlbumView = () => {
                     photo.aspectRatio === "landscape" ? "aspect-[3/2]" : "aspect-[2/3]"
                   }`}
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 p-1 text-white text-xs truncate">
+                <div className="absolute bottom-0 left-0 right-0 bg-white p-1 text-black text-xs truncate border-t">
                   {photo.originalName || photo.title}
                 </div>
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button 
                     variant="destructive" 
-                    size="sm"
+                    size="icon"
+                    className="h-8 w-8"
                     onClick={() => deletePhoto(photo.id)}
                     disabled={isUploading}
                   >
-                    <Icon name="Trash2" className="mr-1" />
-                    Удалить
+                    <Icon name="Trash2" size={16} />
                   </Button>
                 </div>
                 {draggedPhotoId && draggedPhotoId !== photo.id && (

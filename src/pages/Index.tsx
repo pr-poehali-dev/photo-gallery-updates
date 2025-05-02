@@ -10,8 +10,8 @@ import { Album } from "@/lib/types";
 
 const Index = () => {
   const [albums, setAlbums] = useLocalStorage<Album[]>("albums", []);
-  const [gridCols, setGridCols] = useState(4); // Количество альбомов в ряд
-  const [gridGap, setGridGap] = useState(3); // Отступы между альбомами
+  const [gridCols, setGridCols] = useLocalStorage<number>("albumsGridCols", 4);
+  const [gridGap, setGridGap] = useLocalStorage<number>("albumsGridGap", 3);
   const navigate = useNavigate();
 
   const createNewAlbum = () => {
@@ -99,7 +99,7 @@ const Index = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-3" 
+        <div className="grid" 
           style={{ 
             gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
             gap: `${gridGap * 0.25}rem`
@@ -114,14 +114,19 @@ const Index = () => {
               onClick={openAlbum}
             />
           ))}
-          <Button 
-            variant="outline" 
-            className="w-full aspect-square flex flex-col items-center justify-center gap-2 border-dashed"
+          <Card 
+            className="relative w-full cursor-pointer aspect-square hover:shadow-md transition-shadow"
             onClick={createNewAlbum}
           >
-            <Icon name="Plus" size={32} className="text-gray-400" />
-            <span className="text-gray-500">Добавить альбом</span>
-          </Button>
+            <CardContent className="p-4 flex flex-col items-center justify-center h-full">
+              <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gray-50 rounded-md border-2 border-dashed border-gray-200">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <Icon name="Plus" size={32} className="text-gray-400" />
+                  <span className="text-gray-500">Добавить альбом</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
