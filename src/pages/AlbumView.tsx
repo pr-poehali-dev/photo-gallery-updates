@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ const AlbumView = () => {
   const [gridCols, setGridCols] = useState(4);
   const [gridGap, setGridGap] = useState(4);
   const [isUploading, setIsUploading] = useState(false);
+  const [draggedPhotoId, setDraggedPhotoId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!album) {
@@ -109,6 +110,40 @@ const AlbumView = () => {
     setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
   };
 
+  // Функции для перетаскивания фотографий
+  const handleDragStart = (photoId: string) => {
+    setDraggedPhotoId(photoId);
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+  
+  const handleDrop = (dropTargetId: string) => {
+    if (!draggedPhotoId || draggedPhotoId === dropTargetId) return;
+    
+    const draggedIndex = album.photos.findIndex(p => p.id === draggedPhotoId);
+    const dropIndex = album.photos.findIndex(p => p.id === dropTargetId);
+    
+    if (draggedIndex === -1 || dropIndex === -1) return;
+    
+    // Создаем копию массива фотографий
+    const updatedPhotos = [...album.photos];
+    
+    // Вынимаем элемент из старой позиции
+    const [draggedPhoto] = updatedPhotos.splice(draggedIndex, 1);
+    
+    // Вставляем его в новую позицию
+    updatedPhotos.splice(dropIndex, 0, draggedPhoto);
+    
+    // Обновляем альбом с новым порядком фотографий
+    const updatedAlbum = { ...album, photos: updatedPhotos };
+    setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
+    
+    // Сбрасываем состояние перетаскивания
+    setDraggedPhotoId(null);
+  };
+
   return (
     <div className="container mx-auto p-4">
       <input
@@ -193,7 +228,17 @@ const AlbumView = () => {
             }}
           >
             {album.photos.map(photo => (
-              <div key={photo.id} className="relative group">
+              <div 
+                key={photo.id} 
+                className={`relative group 
+                  ${draggedPhotoId === photo.id ? 'opacity-60' : ''} 
+                  ${draggedPhotoId && draggedPhotoId !== photo.id ? 'cursor-move' : ''}
+                `}
+                draggable="true"
+                onDragStart={() => handleDragStart(photo.id)}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(photo.id)}
+              >
                 <img 
                   src={photo.url} 
                   alt={photo.title} 
@@ -215,6 +260,9 @@ const AlbumView = () => {
                     Удалить
                   </Button>
                 </div>
+                {draggedPhotoId && draggedPhotoId !== photo.id && (
+                  <div className="absolute inset-0 border-2 border-dashed border-primary rounded-md pointer-events-none"></div>
+                )}
               </div>
             ))}
           </div>

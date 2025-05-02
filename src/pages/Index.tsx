@@ -10,6 +10,8 @@ import { Album } from "@/lib/types";
 
 const Index = () => {
   const [albums, setAlbums] = useLocalStorage<Album[]>("albums", []);
+  const [gridCols, setGridCols] = useState(4); // Количество альбомов в ряд
+  const [gridGap, setGridGap] = useState(3); // Отступы между альбомами
   const navigate = useNavigate();
 
   const createNewAlbum = () => {
@@ -60,6 +62,33 @@ const Index = () => {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-4 mb-8">
+        <div className="flex items-center gap-2">
+          <span>Альбомы в ряд:</span>
+          <input
+            type="range"
+            min="2"
+            max="10"
+            value={gridCols}
+            onChange={(e) => setGridCols(parseInt(e.target.value))}
+            className="w-24"
+          />
+          <span>{gridCols}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span>Отступы:</span>
+          <input
+            type="range"
+            min="1"
+            max="8"
+            value={gridGap}
+            onChange={(e) => setGridGap(parseInt(e.target.value))}
+            className="w-24"
+          />
+          <span>{gridGap}</span>
+        </div>
+      </div>
+
       {albums.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-lg">
           <Icon name="Images" size={64} className="text-gray-300 mb-4" />
@@ -70,9 +99,12 @@ const Index = () => {
           </Button>
         </div>
       ) : (
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-
+        <div className="grid gap-3" 
+          style={{ 
+            gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+            gap: `${gridGap * 0.25}rem`
+          }}
+        >
           {albums.map(album => (
             <AlbumCard
               key={album.id}
@@ -84,7 +116,7 @@ const Index = () => {
           ))}
           <Button 
             variant="outline" 
-            className="h-full min-h-[240px] border-dashed flex flex-col items-center justify-center gap-2"
+            className="w-full aspect-square flex flex-col items-center justify-center gap-2 border-dashed"
             onClick={createNewAlbum}
           >
             <Icon name="Plus" size={32} className="text-gray-400" />

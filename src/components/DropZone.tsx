@@ -44,7 +44,7 @@ const DropZone = ({ onFilesSelected, className = '' }: DropZoneProps) => {
 
   return (
     <div 
-      className={`${className} relative flex flex-col items-center justify-center p-8 border-2 ${
+      className={`${className} relative flex flex-col items-center justify-center p-4 border-2 max-w-3xl mx-auto ${
         isDragging ? 'border-primary bg-primary/5' : 'border-dashed border-gray-300'
       } rounded-lg transition-colors cursor-pointer`}
       onDragOver={handleDragOver}
@@ -63,19 +63,19 @@ const DropZone = ({ onFilesSelected, className = '' }: DropZoneProps) => {
       
       <Icon 
         name="UploadCloud" 
-        size={48} 
-        className={`mb-3 ${isDragging ? 'text-primary' : 'text-gray-400'}`} 
+        size={40} 
+        className={`mb-2 ${isDragging ? 'text-primary' : 'text-gray-400'}`} 
       />
       
-      <p className="mb-2 text-center text-gray-700">
+      <p className="mb-1 text-center text-gray-700 text-sm">
         Перетащите фотографии сюда или
       </p>
       
-      <Button type="button" variant="outline" className="mt-2">
+      <Button type="button" variant="outline" size="sm" className="mt-1">
         Выберите файлы
       </Button>
       
-      <p className="mt-3 text-xs text-gray-500 text-center">
+      <p className="mt-2 text-xs text-gray-500 text-center">
         Поддерживаются: JPG, PNG, GIF, WebP
       </p>
     </div>

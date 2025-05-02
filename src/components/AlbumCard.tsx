@@ -33,7 +33,7 @@ const AlbumCard = ({ album, onDelete, onEdit, onClick }: AlbumCardProps) => {
 
   return (
     <Card 
-      className="relative w-full max-w-[240px] cursor-pointer hover:shadow-md transition-shadow group"
+      className="relative w-full cursor-pointer hover:shadow-md transition-shadow group"
       onClick={() => onClick(album.id)}
     >
       <CardContent className="p-4">
