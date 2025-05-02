@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import { Button } from "@/components/ui/button";
@@ -114,19 +114,15 @@ const Index = () => {
               onClick={openAlbum}
             />
           ))}
-          <Card 
-            className="relative w-full cursor-pointer aspect-square hover:shadow-md transition-shadow"
+          <div 
+            className="w-full cursor-pointer aspect-square hover:shadow-md transition-shadow border-2 border-dashed border-gray-200 rounded-lg bg-gray-50"
             onClick={createNewAlbum}
           >
-            <CardContent className="p-4 flex flex-col items-center justify-center h-full">
-              <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gray-50 rounded-md border-2 border-dashed border-gray-200">
-                <div className="flex flex-col items-center justify-center gap-2">
-                  <Icon name="Plus" size={32} className="text-gray-400" />
-                  <span className="text-gray-500">Добавить альбом</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            <div className="flex flex-col items-center justify-center h-full gap-2">
+              <Icon name="Plus" size={32} className="text-gray-400" />
+              <span className="text-gray-500">Добавить альбом</span>
+            </div>
+          </div>
         </div>
       )}
     </div>
