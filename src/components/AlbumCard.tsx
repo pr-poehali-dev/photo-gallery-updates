@@ -2,7 +2,7 @@
 import { Album } from "@/lib/types";
 import Icon from "@/components/ui/icon";
 import { Card, CardContent } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, KeyboardEvent } from "react";
 
 interface AlbumCardProps {
   album: Album;
@@ -20,10 +20,19 @@ const AlbumCard = ({ album, onDelete, onEdit, onClick }: AlbumCardProps) => {
     setIsEditing(true);
   };
 
-  const handleSave = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleSave = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     onEdit(album.id, title);
     setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setTitle(album.title);
+      setIsEditing(false);
+    }
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -71,6 +80,7 @@ const AlbumCard = ({ album, onDelete, onEdit, onClick }: AlbumCardProps) => {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="flex-1 p-1 text-sm border rounded"
                 onClick={(e) => e.stopPropagation()}
                 autoFocus

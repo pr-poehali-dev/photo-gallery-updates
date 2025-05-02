@@ -1,8 +1,9 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import { Photo, GridViewMode } from "@/lib/types";
+import PhotoModal from "./PhotoModal";
 
 interface PhotoGridProps {
   photos: Photo[];
@@ -24,18 +25,22 @@ const PhotoGrid = ({
   onReorderPhotos 
 }: PhotoGridProps) => {
   const [draggedPhotoId, setDraggedPhotoId] = useState<string | null>(null);
-  const masonryContainerRef = useRef<HTMLDivElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   
   // Функции для перетаскивания фотографий
-  const handleDragStart = (photoId: string) => {
+  const handleDragStart = (e: React.DragEvent, photoId: string) => {
+    e.dataTransfer.effectAllowed = 'move';
     setDraggedPhotoId(photoId);
   };
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
   };
   
-  const handleDrop = (dropTargetId: string) => {
+  const handleDrop = (e: React.DragEvent, dropTargetId: string) => {
+    e.preventDefault();
     if (!draggedPhotoId || draggedPhotoId === dropTargetId) return;
     
     const draggedIndex = photos.findIndex(p => p.id === draggedPhotoId);
@@ -57,6 +62,23 @@ const PhotoGrid = ({
     
     // Сбрасываем состояние перетаскивания
     setDraggedPhotoId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedPhotoId(null);
+  };
+
+  const openPhotoModal = (index: number) => {
+    setCurrentPhotoIndex(index);
+    setModalOpen(true);
+  };
+
+  const closePhotoModal = () => {
+    setModalOpen(false);
+  };
+
+  const navigatePhoto = (index: number) => {
+    setCurrentPhotoIndex(index);
   };
 
   // Единый компонент фотографии для всех режимов
@@ -82,13 +104,15 @@ const PhotoGrid = ({
         key={photo.id} 
         className={`relative group 
           ${draggedPhotoId === photo.id ? 'opacity-60' : ''} 
-          ${draggedPhotoId && draggedPhotoId !== photo.id ? 'cursor-move' : ''}
+          ${draggedPhotoId && draggedPhotoId !== photo.id ? 'cursor-move' : 'cursor-pointer'}
           ${viewMode === "standard" && photo.aspectRatio === "landscape" && index % gridCols < gridCols - 1 ? 'col-span-2' : ''}
         `}
         draggable="true"
-        onDragStart={() => handleDragStart(photo.id)}
+        onDragStart={(e) => handleDragStart(e, photo.id)}
         onDragOver={handleDragOver}
-        onDrop={() => handleDrop(photo.id)}
+        onDrop={(e) => handleDrop(e, photo.id)}
+        onDragEnd={handleDragEnd}
+        onClick={() => openPhotoModal(index)}
       >
         <img 
           src={photo.url} 
@@ -107,7 +131,10 @@ const PhotoGrid = ({
             variant="destructive" 
             size="icon"
             className="h-8 w-8"
-            onClick={() => onDeletePhoto(photo.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeletePhoto(photo.id);
+            }}
             disabled={isUploading}
           >
             <Icon name="Trash2" size={16} />
@@ -123,30 +150,49 @@ const PhotoGrid = ({
   // Masonary grid layout
   if (viewMode === "masonry") {
     return (
-      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4" 
-           style={{ columnCount: gridCols, columnGap: `${gridGap * 0.25}rem` }}
-           ref={masonryContainerRef}>
-        {photos.map((photo, index) => (
-          <div key={photo.id} className="mb-4 break-inside-avoid">
-            <PhotoItem photo={photo} index={index} />
-          </div>
-        ))}
-      </div>
+      <>
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4" 
+             style={{ columnCount: gridCols, columnGap: `${gridGap * 0.25}rem` }}>
+          {photos.map((photo, index) => (
+            <div key={photo.id} className="mb-4 break-inside-avoid">
+              <PhotoItem photo={photo} index={index} />
+            </div>
+          ))}
+        </div>
+        
+        <PhotoModal
+          photos={photos}
+          currentIndex={currentPhotoIndex}
+          isOpen={modalOpen}
+          onClose={closePhotoModal}
+          onNavigate={navigatePhoto}
+        />
+      </>
     );
   }
 
   return (
-    <div 
-      className="grid gap-2"
-      style={{ 
-        gridTemplateColumns: `repeat(${viewMode === "standard" ? gridCols * 2 : gridCols}, 1fr)`,
-        gap: `${gridGap * 0.25}rem`
-      }}
-    >
-      {photos.map((photo, index) => (
-        <PhotoItem key={photo.id} photo={photo} index={index} />
-      ))}
-    </div>
+    <>
+      <div 
+        className="grid gap-2"
+        style={{ 
+          gridTemplateColumns: `repeat(${viewMode === "standard" ? gridCols * 2 : gridCols}, 1fr)`,
+          gap: `${gridGap * 0.25}rem`
+        }}
+      >
+        {photos.map((photo, index) => (
+          <PhotoItem key={photo.id} photo={photo} index={index} />
+        ))}
+      </div>
+      
+      <PhotoModal
+        photos={photos}
+        currentIndex={currentPhotoIndex}
+        isOpen={modalOpen}
+        onClose={closePhotoModal}
+        onNavigate={navigatePhoto}
+      />
+    </>
   );
 };
 
