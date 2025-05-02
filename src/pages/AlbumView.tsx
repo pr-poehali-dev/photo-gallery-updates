@@ -1,12 +1,14 @@
 
-import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { nanoid } from 'nanoid';
 import { Button } from "@/components/ui/button";
-import Icon from "@/components/ui/icon";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Album, Photo } from "@/lib/types";
 import DropZone from "@/components/DropZone";
+import { usePhotoUpload } from '@/hooks/usePhotoUpload';
+import AlbumHeader from '@/components/album/AlbumHeader';
+import GridControls from '@/components/album/GridControls';
+import PhotoGrid from '@/components/album/PhotoGrid';
+import UploadIndicator from '@/components/album/UploadIndicator';
 
 const AlbumView = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,10 +17,32 @@ const AlbumView = () => {
   const album = albums.find(a => a.id === id);
   const [gridCols, setGridCols] = useLocalStorage<number>("photosGridCols", 4);
   const [gridGap, setGridGap] = useLocalStorage<number>("photosGridGap", 4);
-  const [isUploading, setIsUploading] = useState(false);
-  const [draggedPhotoId, setDraggedPhotoId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Custom hook для загрузки фотографий
+  const { 
+    isUploading, 
+    fileInputRef, 
+    processFiles, 
+    handleFileChange, 
+    addPhoto 
+  } = usePhotoUpload({
+    onPhotosProcessed: (uploadedPhotos) => {
+      if (!album) return;
+      
+      // Обновляем альбом с новыми фотографиями
+      const updatedAlbum = {
+        ...album,
+        photos: [...album.photos, ...uploadedPhotos]
+      };
+      
+      // Обновляем состояние альбомов
+      setAlbums(prevAlbums => 
+        prevAlbums.map(a => a.id === id ? updatedAlbum : a)
+      );
+    }
+  });
+
+  // Если альбом не найден
   if (!album) {
     return (
       <div className="container mx-auto py-16 px-4 text-center">
@@ -28,76 +52,7 @@ const AlbumView = () => {
     );
   }
 
-  const processFiles = (files: FileList | File[]) => {
-    if (!files || files.length === 0) return;
-    
-    setIsUploading(true);
-    
-    // Создаем временный массив для новых фотографий
-    const uploadedPhotos: Photo[] = [];
-    let filesProcessed = 0;
-    
-    // Обрабатываем каждый файл
-    Array.from(files).forEach(file => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      
-      img.onload = () => {
-        // Определяем ориентацию изображения
-        const aspectRatio = img.width / img.height > 1 ? "landscape" : "portrait";
-        
-        // Создаем объект фотографии
-        const newPhoto: Photo = {
-          id: nanoid(),
-          url,
-          title: file.name,
-          originalName: file.name,
-          aspectRatio
-        };
-        
-        // Добавляем в массив новых фотографий
-        uploadedPhotos.push(newPhoto);
-        filesProcessed++;
-        
-        // Когда все файлы обработаны, обновляем состояние
-        if (filesProcessed === files.length) {
-          // Обновляем альбом с новыми фотографиями
-          const updatedAlbum = {
-            ...album,
-            photos: [...album.photos, ...uploadedPhotos]
-          };
-          
-          // Обновляем состояние альбомов
-          setAlbums(prevAlbums => 
-            prevAlbums.map(a => a.id === id ? updatedAlbum : a)
-          );
-          
-          setIsUploading(false);
-        }
-      };
-      
-      // Загружаем изображение для определения размеров
-      img.src = url;
-    });
-    
-    // Сбрасываем значение поля ввода файлов
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      processFiles(e.target.files);
-    }
-  };
-
-  const addPhoto = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
+  // Обработчики для работы с фотографиями
   const deletePhoto = (photoId: string) => {
     const updatedPhotos = album.photos.filter(photo => photo.id !== photoId);
     const updatedAlbum = { ...album, photos: updatedPhotos };
@@ -110,42 +65,14 @@ const AlbumView = () => {
     setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
   };
 
-  // Функции для перетаскивания фотографий
-  const handleDragStart = (photoId: string) => {
-    setDraggedPhotoId(photoId);
-  };
-  
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-  
-  const handleDrop = (dropTargetId: string) => {
-    if (!draggedPhotoId || draggedPhotoId === dropTargetId) return;
-    
-    const draggedIndex = album.photos.findIndex(p => p.id === draggedPhotoId);
-    const dropIndex = album.photos.findIndex(p => p.id === dropTargetId);
-    
-    if (draggedIndex === -1 || dropIndex === -1) return;
-    
-    // Создаем копию массива фотографий
-    const updatedPhotos = [...album.photos];
-    
-    // Вынимаем элемент из старой позиции
-    const [draggedPhoto] = updatedPhotos.splice(draggedIndex, 1);
-    
-    // Вставляем его в новую позицию
-    updatedPhotos.splice(dropIndex, 0, draggedPhoto);
-    
-    // Обновляем альбом с новым порядком фотографий
+  const reorderPhotos = (updatedPhotos: Photo[]) => {
     const updatedAlbum = { ...album, photos: updatedPhotos };
     setAlbums(albums.map(a => a.id === id ? updatedAlbum : a));
-    
-    // Сбрасываем состояние перетаскивания
-    setDraggedPhotoId(null);
   };
 
   return (
     <div className="container mx-auto p-4">
+      {/* Скрытый input для загрузки файлов */}
       <input
         type="file"
         ref={fileInputRef}
@@ -155,59 +82,24 @@ const AlbumView = () => {
         multiple
       />
 
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => navigate('/')}>
-              <Icon name="ArrowLeft" className="mr-1" />
-              Назад
-            </Button>
-            <h1 className="text-3xl font-bold">{album.title}</h1>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={addPhoto} disabled={isUploading}>
-              <Icon name="Plus" className="mr-1" />
-              Добавить фото
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={deleteAllPhotos}
-              disabled={album.photos.length === 0 || isUploading}
-            >
-              <Icon name="Trash2" className="mr-1" />
-              Удалить все
-            </Button>
-          </div>
-        </div>
+      {/* Шапка альбома с кнопками */}
+      <AlbumHeader 
+        title={album.title} 
+        photosCount={album.photos.length}
+        isUploading={isUploading}
+        onAddPhoto={addPhoto}
+        onDeleteAllPhotos={deleteAllPhotos}
+      />
 
-        <div className="flex flex-wrap gap-4 mt-4">
-          <div className="flex items-center gap-2">
-            <span>Фото в ряд:</span>
-            <input
-              type="range"
-              min="2"
-              max="10"
-              value={gridCols}
-              onChange={(e) => setGridCols(parseInt(e.target.value))}
-              className="w-24"
-            />
-            <span>{gridCols}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>Отступы:</span>
-            <input
-              type="range"
-              min="1"
-              max="8"
-              value={gridGap}
-              onChange={(e) => setGridGap(parseInt(e.target.value))}
-              className="w-24"
-            />
-            <span>{gridGap}</span>
-          </div>
-        </div>
-      </div>
+      {/* Настройки сетки */}
+      <GridControls 
+        gridCols={gridCols}
+        gridGap={gridGap}
+        onGridColsChange={setGridCols}
+        onGridGapChange={setGridGap}
+      />
 
+      {/* Основное содержимое: DropZone или сетка фотографий */}
       {album.photos.length === 0 ? (
         <DropZone 
           onFilesSelected={processFiles} 
@@ -220,61 +112,19 @@ const AlbumView = () => {
             className="mb-6 h-32"
           />
           
-          <div 
-            className="grid gap-2"
-            style={{ 
-              gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-              gap: `${gridGap * 0.25}rem`
-            }}
-          >
-            {album.photos.map(photo => (
-              <div 
-                key={photo.id} 
-                className={`relative group 
-                  ${draggedPhotoId === photo.id ? 'opacity-60' : ''} 
-                  ${draggedPhotoId && draggedPhotoId !== photo.id ? 'cursor-move' : ''}
-                `}
-                draggable="true"
-                onDragStart={() => handleDragStart(photo.id)}
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(photo.id)}
-              >
-                <img 
-                  src={photo.url} 
-                  alt={photo.title} 
-                  className={`w-full object-cover rounded-md ${
-                    photo.aspectRatio === "landscape" ? "aspect-[3/2]" : "aspect-[2/3]"
-                  }`}
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-white p-1 text-black text-xs truncate border-t">
-                  {photo.originalName || photo.title}
-                </div>
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button 
-                    variant="destructive" 
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => deletePhoto(photo.id)}
-                    disabled={isUploading}
-                  >
-                    <Icon name="Trash2" size={16} />
-                  </Button>
-                </div>
-                {draggedPhotoId && draggedPhotoId !== photo.id && (
-                  <div className="absolute inset-0 border-2 border-dashed border-primary rounded-md pointer-events-none"></div>
-                )}
-              </div>
-            ))}
-          </div>
+          <PhotoGrid 
+            photos={album.photos}
+            gridCols={gridCols}
+            gridGap={gridGap}
+            isUploading={isUploading}
+            onDeletePhoto={deletePhoto}
+            onReorderPhotos={reorderPhotos}
+          />
         </>
       )}
       
-      {isUploading && (
-        <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-md p-3 flex items-center gap-2">
-          <Icon name="Loader2" className="animate-spin text-primary" />
-          <span>Загрузка фотографий...</span>
-        </div>
-      )}
+      {/* Индикатор загрузки */}
+      <UploadIndicator isUploading={isUploading} />
     </div>
   );
 };
