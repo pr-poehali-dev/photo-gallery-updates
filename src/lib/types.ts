@@ -15,3 +15,5 @@ export interface Album {
   photos: Photo[];
   createdAt: number;
 }
+
+export type GridViewMode = "standard" | "masonry" | "uniform";

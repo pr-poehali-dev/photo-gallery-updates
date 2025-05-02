@@ -2,7 +2,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { Album, Photo } from "@/lib/types";
+import { Album, Photo, GridViewMode } from "@/lib/types";
 import DropZone from "@/components/DropZone";
 import { usePhotoUpload } from '@/hooks/usePhotoUpload';
 import AlbumHeader from '@/components/album/AlbumHeader';
@@ -17,6 +17,7 @@ const AlbumView = () => {
   const album = albums.find(a => a.id === id);
   const [gridCols, setGridCols] = useLocalStorage<number>("photosGridCols", 4);
   const [gridGap, setGridGap] = useLocalStorage<number>("photosGridGap", 4);
+  const [viewMode, setViewMode] = useLocalStorage<GridViewMode>("photosViewMode", "standard");
 
   // Custom hook для загрузки фотографий
   const { 
@@ -95,8 +96,10 @@ const AlbumView = () => {
       <GridControls 
         gridCols={gridCols}
         gridGap={gridGap}
+        viewMode={viewMode}
         onGridColsChange={setGridCols}
         onGridGapChange={setGridGap}
+        onViewModeChange={setViewMode}
       />
 
       {/* Основное содержимое: DropZone или сетка фотографий */}
@@ -116,6 +119,7 @@ const AlbumView = () => {
             photos={album.photos}
             gridCols={gridCols}
             gridGap={gridGap}
+            viewMode={viewMode}
             isUploading={isUploading}
             onDeletePhoto={deletePhoto}
             onReorderPhotos={reorderPhotos}

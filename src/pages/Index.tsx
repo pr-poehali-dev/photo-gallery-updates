@@ -106,13 +106,14 @@ const Index = () => {
           }}
         >
           {albums.map(album => (
-            <AlbumCard
-              key={album.id}
-              album={album}
-              onDelete={deleteAlbum}
-              onEdit={editAlbum}
-              onClick={openAlbum}
-            />
+            <div key={album.id} className="aspect-square">
+              <AlbumCard
+                album={album}
+                onDelete={deleteAlbum}
+                onEdit={editAlbum}
+                onClick={openAlbum}
+              />
+            </div>
           ))}
           <div 
             className="w-full cursor-pointer aspect-square hover:shadow-md transition-shadow border-2 border-dashed border-gray-200 rounded-lg bg-gray-50"

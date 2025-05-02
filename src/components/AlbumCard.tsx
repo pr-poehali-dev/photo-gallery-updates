@@ -33,11 +33,11 @@ const AlbumCard = ({ album, onDelete, onEdit, onClick }: AlbumCardProps) => {
 
   return (
     <Card 
-      className="relative w-full cursor-pointer hover:shadow-md transition-shadow group"
+      className="relative w-full h-full cursor-pointer hover:shadow-md transition-shadow group"
       onClick={() => onClick(album.id)}
     >
-      <CardContent className="p-4">
-        <div className="relative w-full aspect-square flex items-center justify-center overflow-hidden bg-gray-100 rounded-md mb-2">
+      <CardContent className="p-4 flex flex-col h-full">
+        <div className="relative flex-grow w-full flex items-center justify-center overflow-hidden bg-gray-100 rounded-md mb-2">
           {album.photos.length > 0 ? (
             <img 
               src={album.photos[0].url} 
@@ -64,26 +64,28 @@ const AlbumCard = ({ album, onDelete, onEdit, onClick }: AlbumCardProps) => {
           </div>
         </div>
         
-        {isEditing ? (
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="flex-1 p-1 text-sm border rounded"
-              onClick={(e) => e.stopPropagation()}
-              autoFocus
-            />
-            <button 
-              onClick={handleSave}
-              className="bg-primary text-white p-1 rounded"
-            >
-              <Icon name="Check" size={16} />
-            </button>
-          </div>
-        ) : (
-          <div className="font-medium truncate">{album.title}</div>
-        )}
+        <div className="mt-auto">
+          {isEditing ? (
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="flex-1 p-1 text-sm border rounded"
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+              />
+              <button 
+                onClick={handleSave}
+                className="bg-primary text-white p-1 rounded"
+              >
+                <Icon name="Check" size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="font-medium truncate">{album.title}</div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
